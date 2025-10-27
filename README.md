@@ -21,7 +21,7 @@ For example, given:
 | user:bob             | member   | group:app_one   |
 | group:app_one#member | admin    | application:one |
 
-Then bob is an admin of application:one, and this openFGA query returns true:
+Then bob is an admin of application:one, and the following openFGA triple queries (test in bottom right of playground) return true:
 ```
 is user:bob an admin of application:one
 ```
@@ -29,7 +29,7 @@ is user:bob an admin of application:one
 ### Admin Role
 The admin role will infer all other roles.
 
-For example, because bob is an admin, bob will also be a policy_writer and policy_reader:
+For example, because bob is an admin, bob will also be a policy_writer and policy_reader, and the following openFGA triple queries (test in bottom right of playground) return true:
 ```
 is user:bob a policy_writer of application:one
 is user:bob a policy_reader of application:one
@@ -49,7 +49,7 @@ For example, given:
 | tag:app_one_tag | tag         | device:d1       |
 
 
-Then device d1 has an application of application:one
+Then device d1 has an application of application:one, and the following openFGA triple queries (test in bottom right of playground) return true:
 ```
 is application:one an application of device:d1
 ```
