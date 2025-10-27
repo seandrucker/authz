@@ -9,7 +9,7 @@ Below is a simple walkthrough for some of the key features of the authorization 
 
 To play with the examples:
 1. Go to https://play.fga.dev/stores/create/?id=01K8HVGGK5S5KGR47RFNKD90RY
-2. Create a store named ZEDEDA.
+2. Add a store name, DEMO for example.
 
 ### Group Membership
 If a user is a member of a group, and that group has access to a resource, then the user has that same access to the resource.
