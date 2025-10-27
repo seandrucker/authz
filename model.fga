@@ -1,0 +1,69 @@
+model
+  schema 1.1
+
+# Principals
+
+# user account, backed by an email address.
+type user
+  relations
+    define admin: [user, service_account, group#member]
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+
+# machine to machine service account
+type service_account
+  relations
+    define admin: [user, service_account, group#member]
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+
+# group of users, service_account, or includes another group.
+type group
+  relations
+    define member: [user, service_account, group#member]
+
+#  Top level tenant
+type organization
+  relations
+    # top level admin has control of everything within the tenant.
+    define admin: [user, service_account, group#member]
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+
+type project
+  relations
+    define organization: [organization]
+    define admin: [user, service_account, group#member] or admin from organization
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+
+type tag
+  relations
+    define project: [project]
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+    define application: [application]
+    
+type application
+  relations
+    define project: [project]
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+
+type device
+  relations
+    define project: [project]
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer
+    define tag: [tag]
+    define application: [application] or application from tag
+
+type operating_system
+  relations
+    define project: [project]
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define policy_reader: [user, service_account, group#member] or policy_writer

@@ -1,0 +1,28 @@
+---
+name: Store Name 
+model_file: ./model.fga 
+tuples:
+  - object: group:app_one
+    relation: member
+    user: user:bob
+  - object: application:one
+    relation: admin
+    user: group:app_one#member
+    
+tests: 
+  - name: test-1
+    description: testing that the model works
+    check: # a set of checks to run
+      - object: app:one
+        user: user:bob
+        assertions:
+          # a set of expected results for each relation
+          admin: true
+          policy_writer: true
+    list_objects: # a set of list objects to run
+      - user: user:bob
+        type: group
+        assertions:
+          # a set of expected results for each relation
+          member:
+            - app_one
