@@ -6,32 +6,60 @@ model
 #
 
 # all resources are automatically assigned to the tenant that owns them.
+# the tenant itself is defined with three basic roles, role:admin, role:writer and role:reader.
+# It also includes user_create and 
 type tenant
   relations
-    # tenant:default#role_admin@role:admin
-    define role_admin: [role#assignee]
-    # tenant:default#role_writer@role:writer
-    define role_writer: [role#assignee] or role_admin
-    # tenant:default#role_reader@role:reader
-    define role_reader: [role#assignee] or role_writer
+    # Basic tenant wide built-in permissions.  
+    # For example, role:admin#assignee@user:alice@example.com would give alice administrator access to everything.
+    #
+    # only for: tenant:default#admin@role:admin
+    define admin_assignee: [role#assignee]
+    # only for: tenant:default#writer@role:writer
+    define witer_assignee: [role#assignee] or admin_assignee
+    # only for: tenant:default#reader@role:reader
+    define reader_assignee: [role#assignee] or witer_assignee
+    
+    # PERMISSIONS
+    # tenant:default#user_create@role:user_writer
+    define user_create: [role#assignee] or admin_assignee or witer_assignee
+    # tenant:default#reader@role:group_writer
+    define group_create: [role#assignee] or admin_assignee or witer_assignee
 
-# user account, backed by an email address.
+
+# Principals is any entity that can be authenticated and authorized using this model.  
+# The three principal types are user, group, and service_account.  
+# Principals can be directly assigned to roles.  Any type relation defined as 
+# [user, service_account, group#member] is a built-in role.  
+
+# A user is a principal that represents an individual human account.  For example, user:bob@example.com.
 type user
   relations
-    # tenant scoped header
+    # standard tenant scoped roles and permissions
     define tenant: [tenant]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin_assignee from tenant
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
-# group of users, service_account, or includes another group.
+# A group is a container for principals (users, service_account, or other groups). A group itself does not hold 
+# permissions. Instead, roles are granted to the group in two ways.  For built object roles (those 
+# listed as relations), the group is related with the at the resource level. All members of 
+# that group inherit the permissions associated with those roles.
 type group
   relations
-    # tenant scoped header
+    # standard tenant scoped roles and permissions
     define tenant: [tenant]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin_assignee from tenant
+    define writer: [user, service_account, group#member, role#assignee] or admin or witer_assignee from tenant
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
+
+    # group permissions
+    define membership_create: [role#assignee] or admin or writer
+    define membership_delete: [role#assignee] or admin or writer
+    define membership_get: [role#assignee] or admin or writer
 
     # group relations
     define member: [user, service_account, group#member]
@@ -39,32 +67,34 @@ type group
 # machine to machine service account
 type service_account
   relations
-    # tenant scoped header
+    # standard tenant scoped roles and permissions
     define tenant: [tenant]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin_assignee from tenant
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
-
-# dynamic roles that can span multiple object types. 
+# dynamic role added via tuples.
 type role
   relations
-    # tenant scoped header
+    # standard tenant scoped roles and permissions
     define tenant: [tenant]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin_assignee from tenant
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
-    # role relations
+    # principles assigned to the role
     define assignee: [user, service_account, group#member, role#assignee]
 
 type organization
   relations
-    # tenant scoped header
+    # standard tenant scoped roles and permissions
     define tenant: [tenant]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin_assignee from tenant
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
 #
 # Organization scoped resources
@@ -72,12 +102,12 @@ type organization
 
 type project
   relations
-    # organization scoped header
-    define tenant: [tenant]
+    # standard organization scoped roles and permissions
     define organization: [organization]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant or admin from organization
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin from organization
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
 #
 # Project scoped resources
@@ -85,44 +115,49 @@ type project
 
 type tag
   relations
-    # project scoped header
-    define tenant: [tenant]
+    # standard project scoped roles and permissions
     define project: [project]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant or admin from project
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
-    # tag relations
+    # tagged applications
     define application: [application]
+    # tagged operating systems
+    define operating_system: [operating_system]
+    # device tags are stored on the device as that's where authorization happens and openFGA does not support inverse relationships.
     
 type application
   relations
-    # project scoped header
-    define tenant: [tenant]
+    # standard project scoped roles and permissions
     define project: [project]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant or admin from project
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
-
-type device
-  relations
-    # project scoped header
-    define tenant: [tenant]
-    define project: [project]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant or admin from project
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
-
-    # tag for device
-    define tag: [tag]
-    # application the device can run, either explicit or application assigned to common tag
-    define application: [application] or application from tag
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
 
 type operating_system
   relations
-    # project scoped header
-    define tenant: [tenant]
+    # standard project scoped roles and permissions
     define project: [project]
-    define admin: [user, service_account, group#member, role#assignee] or role_admin from tenant or admin from project
-    define policy_writer: [user, service_account, group#member, role#assignee] or admin
-    define policy_reader: [user, service_account, group#member, role#assignee] or policy_writer
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
+
+type device
+  relations
+    # standard project scoped roles and permissions
+    define project: [project]
+    define admin: [user, service_account, group#member] or admin from project
+    define policy_writer: [user, service_account, group#member] or admin
+    define setIamPolicy: [role#assignee] or policy_writer
+    define getIamPolicy: [role#assignee] or setIamPolicy
+
+    # tag for device
+    define tag: [tag]
+    # applications the device can run, either explicitly assigned or application assigned to common tag
+    define application: [application] or application from tag
+    # operating systems the device can run, either explicitly assigned or operating system assigned to common tag
+    define operating_system: [operating_system] or operating_system from tag
